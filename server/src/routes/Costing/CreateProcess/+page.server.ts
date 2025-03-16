@@ -11,6 +11,7 @@ import { schema } from './schema.js';
 type process = {
     _id: WithId<string>;
     name: string;
+    type: string;
 };
 
 
@@ -20,7 +21,8 @@ export const load: PageServerLoad = async () => {
     // console.log("Load Function Called")
     const serializedData = data.map(doc => ({
         _id: doc._id.toString(),
-        name: doc.name
+        name: doc.name,
+        type: doc.type
     }));
     console.log(serializedData)
     return { process: serializedData, form};

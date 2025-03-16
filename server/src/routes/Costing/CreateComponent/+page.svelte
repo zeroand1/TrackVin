@@ -1,9 +1,38 @@
 <script lang='ts'>
 	import { superForm } from 'sveltekit-superforms';
-	let {data} = $props();
-	const {form , errors, constraints, message, enhance} = superForm(data.form);
-    let procurement = $state('manufactured');
-    let selectedProcess: string[] = $state([]);
+    import type { PageData } from './$types.js';
+    import type { ObjectId } from 'mongodb';
+    export let data: PageData;
+    import SuperDebug from 'sveltekit-superforms';
+	const {form , errors, constraints, message, enhance} = superForm(data.form, {dataType: 'json'});
+    let selectedProcesses: Record<string, { cost: number; batchSize: number }> = {};
+
+        // Toggle selection and initialize cost & batchSize
+    function toggleProcess(processId: string) {
+        if (selectedProcesses[processId]) {
+            // Remove process if already selected
+            const { [processId]: _, ...rest } = selectedProcesses;
+            selectedProcesses = rest;
+        } else {    
+            // Add process with default values
+            selectedProcesses = {
+                ...selectedProcesses,
+                [processId]: { cost: 0, batchSize: 1 }
+            };
+        }
+        $form.processes = selectedProcesses;
+    }
+
+    // Update cost or batchSize for a process
+    function updateProcess(processId:string, field:string, value:number) {
+        selectedProcesses = {
+            ...selectedProcesses,
+            [processId]: { ...selectedProcesses[processId], [field]: value }
+        };
+        console.log(selectedProcesses);
+        $form.processes = selectedProcesses;
+    }
+    
 </script>
 
 
@@ -22,13 +51,14 @@
     {#if $errors.name}<span class="invalid">{$errors.name}</span>{/if}
     <br>
     <br>
+    {console.log($errors)}
     <label for="qty">Qty required in assembly:</label>   
     <input type="number" name="qty" placeholder="Qty required in assembly" aria-invalid={$errors.qty ? 'true' : undefined} bind:value={$form.qty} {...$constraints.qty}>
-    {#if $errors.qty}<span class="invalid">{$errors.qty}</span>{/if}
+    {#if $errors.qty}<span class="invalid">{$errors.qty[0]}</span>{/if}
     <br>
     <br>
     <label for="description">Component Material:</label>
-    <select name="material">
+    <select name="material" bind:value={$form.material}>
         {#each data.material as material}
             <option value={material._id} title="{material.cost}-₹{material.cost}-{material.name}">{material.cost}-₹{material.cost}-{material.name}</option>
         {/each}
@@ -41,11 +71,11 @@
     <br>
     <br>
     <label>
-        <input type="radio" bind:group={procurement} value="manufactured" name="procurement"/>
+        <input type="radio" name="procurement" bind:group={$form.procurement} value="manufactured" />
         Manufactured
     </label>    
     <label>
-        <input type="radio" bind:group={procurement} value="bought" name="procurement"/>
+        <input type="radio" name="procurement" bind:group={$form.procurement} value="bought" />
         Bought
     </label>
     {#if $errors.procurement}<span class="invalid">{$errors.procurement}</span>{/if}
@@ -56,25 +86,51 @@
     {/if}
     <br>
     <br>
-    {#if procurement === 'bought'}
+    {#if $form.procurement === 'bought'}
             <label for="cost">Cost:</label>   
             <input type="number" name="cost" placeholder="Cost" aria-invalid={$errors.cost ? 'true' : undefined} bind:value={$form.cost} {...$constraints.cost}>
             <br>
             <br>    
         {:else}
+            <input  name="processes" bind:value={$form.processes} type="hidden"/>
             <p>Processes:</p>
-            {#each data.process as process}
-                <label>
-                    <input type="checkbox" name="processes" bind:group={selectedProcess} value={process._id} />
-                    {process.name}
-                </label>
-                <br>
+            {#each ['casting','machining', 'finishing', "testing"] as procType}
+            <h3>{procType.charAt(0).toUpperCase() + procType.slice(1)}</h3>
+                {#each data.process as processObj}
+                    {#if processObj.type === procType}
+                    <label>
+                        <input 
+                        type="checkbox" 
+                        on:change={() => toggleProcess(processObj._id)} 
+                        checked={processObj._id in selectedProcesses}
+                    />
+                    {processObj.name}
+                    </label>
+                    {#if processObj._id in selectedProcesses}
+                        <label>
+                            Cost: 
+                            <input 
+                                type="number" 
+                                on:input={(e) => updateProcess(processObj._id, "cost", +e.currentTarget.value)}
+                            />
+                        </label>
+                        <label>
+                            Batch Size: 
+                            <input 
+                                type="number" 
+                                on:input={(e) => updateProcess(processObj._id, "batchSize", + e.currentTarget.value)}
+                            />
+                        </label>
+                    {/if}
+                    <br>
+                    {/if}
+                {/each}
             {/each}
             
     {/if}
     <button>Add Component</button>
 </form>
-
+<SuperDebug data={$form} />
 <style>
     h1{
         text-align: center;

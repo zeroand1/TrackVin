@@ -29,6 +29,7 @@ type material = {
 type process = {
     _id: WithId<string>;
     name: string;
+    type: string;
 };
 
 export const load = async () => {
@@ -43,7 +44,8 @@ export const load = async () => {
         }));
         const serializedProcess = processData.map(doc => ({
             _id: doc._id.toString(),
-            name: doc.name
+            name: doc.name,
+            type: doc.type
         }));
         return { material: serializedMat, process: serializedProcess, form};
 };
@@ -57,8 +59,8 @@ export const actions  = {
         }
         else{
             console.log(form.data);
-            // let payload = structuredClone(form.data);
-            // await componentDB.insertOne(payload);	
+            let payload = structuredClone(form.data);
+            await componentDB.insertOne(payload);	
         }
         // TODO: Do something with the validated form.data
         return message(form, 'Form posted successfully!');
