@@ -1,5 +1,5 @@
 import { componentDB } from "$db/component";
-import type { WithId } from "mongodb";
+import { ObjectId, type WithId } from "mongodb";
 import type { PageServerLoad, Actions } from "./$types";
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
@@ -51,6 +51,7 @@ export const load = async () => {
 };
 export const actions  = {
     default: async ({ request }) => {
+        let totalCost: number = 0;
         const form = await superValidate(request, zod(schema));
         console.log(form.data);
         if (!form.valid) {
@@ -60,7 +61,21 @@ export const actions  = {
         else{
             console.log(form.data);
             let payload = structuredClone(form.data);
-            await componentDB.insertOne(payload);	
+            ////////////////Total calculation
+            let matObj =  await materialDB.find<material>({_id:new ObjectId(payload.material)}, { limit: 50}).toArray();
+            totalCost = ((payload.materialPerYield/payload.yield)*matObj[0].cost);
+            if (payload.procurement === "manufactured") {
+                Object.keys(payload.processes).forEach((key) => {
+                    totalCost += (payload.processes[key].cost/payload.processes[key].batchSize);
+                });
+            }
+            else {
+                totalCost = payload.cost;
+            }
+            totalCost = totalCost*payload.qty;
+            let final:any = payload;
+            final['totalCost'] = totalCost;
+            await componentDB.insertOne(final);	
         }
         // TODO: Do something with the validated form.data
         return message(form, 'Form posted successfully!');

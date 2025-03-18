@@ -3,7 +3,7 @@
     import type { PageData } from './$types';
 	export let data: PageData;
     let process = data.process;
-    let type = "casting";
+    let type = "machining";
     const {form , errors, constraints, message, enhance } = superForm(data.form, {resetForm :    true});
 </script>   
 
@@ -19,6 +19,10 @@
     <br>
     <br> 
     <label for = "type">Process type: </label>
+    <label>
+        <input type ="radio" name="type" value="treatment" bind:group = {type} >
+        Treatment
+    </label>
     <label>
         <input type ="radio" name="type" value="casting" bind:group = {type} >
         Casting
@@ -39,7 +43,7 @@
     <button>Add Process</button>
 </form>
 
-{#each ['casting','machining', 'finishing', "testing"] as procType}
+{#each ['treatment','casting','machining', 'finishing', "testing"] as procType}
     <h3>{procType.charAt(0).toUpperCase() + procType.slice(1)}</h3>
     {#each process as process}
         {#if process.type === procType}
