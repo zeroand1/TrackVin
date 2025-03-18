@@ -5,6 +5,9 @@
     export let data: PageData;
     import SuperDebug from 'sveltekit-superforms';
     import { resolveRoute } from '$app/paths';
+    import { Input, Label, Helper , P, Button , Heading , Radio, Select, Textarea, Checkbox, Fileupload} from 'flowbite-svelte';
+    import { PenSolid } from 'flowbite-svelte-icons';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell,TableSearch } from 'flowbite-svelte';   
 	const {form , errors, constraints, message, enhance} = superForm(data.form, {dataType: 'json' ,onUpdate: ({ result }) => {
             if (result.type === "success") {
                 console.log("Form submitted successfully!");
@@ -39,120 +42,175 @@
         console.log(selectedProcesses);
         // $form.processes = selectedProcesses;
     }
+
+    let fileInput: HTMLInputElement | null = null;;
+
+
+    function handleFileUpload(event:Event){
+        const target = event.target as HTMLInputElement;
+        if (target.files && target.files[0]) {
+            const file = target.files[0];
+            const reader = new FileReader();
+            reader.onload = () => {
+                document.querySelector("img")!.src = reader.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
     
 </script>
 
 
-<h1>Add new Component type</h1>
+<Heading>Add new Component type</Heading>
+<br>
 
 {#if $message}<h3>{$message}</h3>{/if}
-
-<form method="POST" use:enhance>
-    <label for="code">Component Code:</label>
-    <input type="text" name="code" placeholder="Component Code" aria-invalid={$errors.code ? 'true' : undefined} bind:value={$form.code} {...$constraints.code} >
-    {#if $errors.code}<span class="invalid">{$errors.code}</span>{/if}
-    <br>
-    <br>
-    <label for="name">Component Name:</label>
-    <input type="text" name="name" placeholder="Component Name" aria-invalid={$errors.name ? 'true' : undefined} bind:value={$form.name}  {...$constraints.name}>
-    {#if $errors.name}<span class="invalid">{$errors.name}</span>{/if}
-    <br>
-    <br>
-    <label for="qty">Qty required in assembly:</label>   
-    <input type="number" name="qty" placeholder="Qty required in assembly" aria-invalid={$errors.qty ? 'true' : undefined} bind:value={$form.qty} {...$constraints.qty}>
-    {#if $errors.qty}<span class="invalid">{$errors.qty[0]}</span>{/if}
-    <br>
-    <br>
-    <label for="description">Component Material:</label>
-    <select name="material" bind:value={$form.material} {...$constraints.material}>
-        <option disabled selected value={""} >Select Material</option>
-        {#each data.material as material}
-            <option value={material._id} title="{material.cost}-₹{material.cost}-{material.name}">{material.cost}-₹{material.cost}-{material.name}</option>
-        {/each}
-    </select>
-    {#if $errors.material}<span class="invalid">{$errors.material}</span>{/if}
-    <br>
-    <br>
-    <label for="material yield">
-        Qty yield from material:
-        <input type="number" name="materialYield" placeholder="Material Yield" aria-invalid={$errors.yield ? 'true' : undefined} bind:value={$form.yield} {...$constraints.yield}>
-        per
-    </label>
-    <input type="number" name="materialPerYield" placeholder="Material used per yield" aria-invalid={$errors.materialPerYield ? 'true' : undefined} bind:value={$form.materialPerYield} {...$constraints.materialPerYield}> Kg
-    {#if $errors.yield}<span class="invalid">{$errors.yield}</span>{/if}
-    {#if $errors.materialPerYield}<span class="invalid">{$errors.materialPerYield}</span>{/if}
-    <br>
-    <br>
-    <label for="description">Component Description:</label>
-    <textarea name="description" placeholder="Component Description" aria-invalid={$errors.description ? 'true' : undefined} bind:value={$form.description} {...$constraints.description}></textarea>
-    {#if $errors.description}<span class="invalid">{$errors.description}</span>{/if}
-    <br>
-    <br>
-    <label>
-        <input type="radio" name="procurement" bind:group={$form.procurement} value="manufactured" />
-        Manufactured
-    </label>    
-    <label>
-        <input type="radio" name="procurement" bind:group={$form.procurement} value="bought" />
-        Bought
-    </label>
-    {#if $errors.procurement}<span class="invalid">{$errors.procurement}</span>{/if}
-    <br>
-    <br>
-    {#if $form.procurement === 'bought'}
-            <label for="cost">Cost:</label>   
-            <input type="number" name="cost" placeholder="Cost" aria-invalid={$errors.cost ? 'true' : undefined} bind:value={$form.cost} {...$constraints.cost}>
-            {#if $errors.cost}<span class="invalid">{$errors.cost}</span>{/if}
-            <br>
-            <br>    
-        {:else}
-            <input  name="processes" bind:value={$form.processes} type="hidden"/>
-            <p>Processes:</p>
-            {#if $errors.processes?._errors}<span class="invalid">{$errors.processes._errors[0]}</span>
-             {console.log($errors)}
-            {:else if $errors.processes}<span class="invalid">{$errors.processes}</span>
-            {/if}
-            {#each ['treatment','casting','machining', 'finishing', "testing"] as procType}
-            <h3>{procType.charAt(0).toUpperCase() + procType.slice(1)}</h3>
-                {#each data.process as processObj, index}
-                    {#if processObj.type === procType}
-                    <label>
-                        <input 
-                        type="checkbox" 
-                        on:change={() => toggleProcess(processObj._id)} 
-                        checked={processObj._id in selectedProcesses}
-                    />
-                    {processObj.name}
-                    </label>
-                    {#if processObj._id in selectedProcesses}
-                        <label>
-                            Cost: 
-                            <input 
-                                type="number"
-                                bind:value={$form.processes[processObj._id].cost}
-                                on:input={(e) => updateProcess(processObj._id, "cost", +e.currentTarget.value,index)}
-                                min="0"
-                            />
-                        </label>
-                        <label>
-                            Batch Size: 
-                            <input 
-                                type="number" 
-                                bind:value={$form.processes[processObj._id].batchSize}
-                                on:input={(e) => updateProcess(processObj._id, "batchSize", + e.currentTarget.value,index)}
-                                min="1"
-                            />
-                        </label>
-                    {/if}
-                    <br>
-                    {/if}
-                {/each}
-            {/each}
+<form method="POST" use:enhance class="max-w-4xl mx-auto p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
+    <!-- Profile Header -->
+    <div class="flex items-center space-x-6">
+        <!-- Profile Picture -->
+        <div class="relative w-32 h-32 group">
+            <button type="button" class="text-white text-xl" on:click={() => {fileInput? fileInput.click(): null}}>
+            <!-- Hidden File Input -->
+            <input type="file" accept="image/*" class="hidden" bind:this={fileInput} on:change={handleFileUpload} />
+        
+            <!-- Profile Image -->
+            <img src="/add_image.svg" alt="Profile" class="w-full h-full rounded-lg border-4 border-white dark:border-gray-800 shadow-lg object-cover">
+        
+            <!-- Hover Effect: Pencil Icon -->
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <PenSolid/>
+                </div>
+            </button>
+        </div>
+        <!-- Editable Name & Code -->
+        <div class="text-left">
+            <Input type="text" name="code" placeholder="Component Code" bind:value={$form.code}
             
+                class="text-2xl font-bold bg-transparent focus:ring-2 dark:text-white w-full" {...$constraints.code}/>
+            <Input type="text" name="name" placeholder="Component Name" bind:value={$form.name} 
+                class="text-lg text-gray-500 bg-transparent focus:ring-2 dark:text-gray-400 w-full mt-1" {...$constraints.code}/>
+        </div>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Basic Info -->
+        <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+            <h2 class="text-lg font-semibold dark:text-white">Basic Info</h2>
+            
+            <Label for="qty" class="dark:text-gray-300">Qty in Assembly:</Label>   
+            <Input type="number" name="qty" placeholder="Qty required" bind:value={$form.qty} {...$constraints.qty} class="w-full"/>
+            {#if $errors.qty}<span class="invalid">{$errors.qty[0]}</span>{/if}
+            {#if $form.procurement === 'manufactured'}
+                <Label for="material" class="dark:text-gray-300">Material:</Label>
+                <Select name="material" bind:value={$form.material} {...$constraints.material} class="w-full dark:bg-gray-700 dark:text-white">
+                    {#each data.material as material}
+                        <option value={material._id}>{material.name} - ₹{material.cost}</option>
+                    {/each}
+                </Select>
+                {#if $errors.material}<span class="invalid">{$errors.material}</span>{/if}
+            {/if}
+            {#if $form.procurement === 'bought'}
+            <Label for="cost" class="dark:text-gray-300">Cost:</Label>   
+            <Input type="number" name="cost" placeholder="Cost" bind:value={$form.cost} {...$constraints.cost} class="w-full dark:bg-gray-700 dark:text-white"/>
+            {#if $errors.cost}<span class="invalid">{$errors.cost}</span>{/if}
+        {/if}
+        </div>
+
+        <!-- Procurement & Cost -->
+        <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+            <h2 class="text-lg font-semibold dark:text-white">Procurement</h2>
+            <div class="flex gap-4">
+                <Radio type="radio" name="procurement" bind:group={$form.procurement} value="manufactured">Manufactured</Radio>
+                <Radio type="radio" name="procurement" bind:group={$form.procurement} value="bought">Bought</Radio>
+            </div>
+            {#if $errors.procurement}<span class="invalid">{$errors.procurement}</span>{/if}
+            <br>
+
+            {#if $form.procurement === 'manufactured'}
+            <div class="flex items-end gap-4">
+                <!-- First Input Block -->
+                <div class="w-1/3">
+                    <Label class="dark:text-gray-300 block" for="material yield">
+                        Qty yield from material:
+                    </Label>
+                    <Input type="number" name="materialYield" placeholder="Material Yield" 
+                        aria-invalid={$errors.yield ? 'true' : undefined} 
+                        bind:value={$form.yield} {...$constraints.yield} 
+                        class="w-full"/>
+                </div>
+            
+                <!-- 'per' text vertically aligned with inputs -->
+                <div class="pb-2"><P>per</P></div>
+            
+                <!-- Second Input Block (matching structure of first) -->
+                <div class="w-1/3">
+                    <Label class="dark:text-gray-300 invisible block">
+                        Placeholder
+                    </Label>
+                    <Input type="number" name="materialPerYield" placeholder="Material used per yield" 
+                        aria-invalid={$errors.materialPerYield ? 'true' : undefined} 
+                        bind:value={$form.materialPerYield} {...$constraints.materialPerYield} 
+                        class="w-full"/>
+                </div>
+            
+                <!-- "Kg" text aligned properly -->
+                <div class="pb-2"><P>Kg</P></div>
+            </div>
+            {/if}
+            
+            
+            
+        
+        </div>
+    </div>
+
+    <!-- Processes Section (For Manufactured) -->
+    {#if $form.procurement === 'manufactured'}
+        <div class="mt-6 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+            <h2 class="text-lg font-semibold dark:text-white">Processes:</h2>
+            {#if $errors.processes?._errors}<span class="invalid">{$errors.processes._errors[0]}</span>{/if}
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {#each ['treatment', 'casting', 'machining', 'finishing', 'testing'] as procType}
+                    <div class="border p-4 rounded-md bg-white dark:bg-gray-700 shadow">
+                        <h3 class="font-semibold mb-2 dark:text-white">{procType.charAt(0).toUpperCase() + procType.slice(1)}</h3>
+                        {#each data.process as processObj}
+                            {#if processObj.type === procType}
+                                <Checkbox on:change={() => toggleProcess(processObj._id)} checked={processObj._id in selectedProcesses}>
+                                    {processObj.name}
+                                </Checkbox>
+
+                                {#if processObj._id in selectedProcesses}
+                                <div class="mt-2 flex gap-4 items-end">
+                                    <div class="w-1/2">
+                                        <Label class="dark:text-gray-300 block">{processObj.name} Cost:</Label>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].cost} class="w-full dark:bg-gray-700 dark:text-white"/>
+                                    </div>
+                                
+                                    <div class="w-1/2">
+                                        <Label class="dark:text-gray-300 block">{processObj.name} Batch Size:</Label>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].batchSize} class="w-full dark:bg-gray-700 dark:text-white"/>
+                                    </div>
+                                </div>
+                                {/if}
+                            {/if}
+                        {/each}
+                    </div>
+                {/each}
+            </div>
+        </div>
     {/if}
-    <button>Add Component</button>
+
+    <!-- Submit Button -->
+    <div class="sticky bottom-0 bg-gray-100 dark:bg-gray-800 p-4 flex justify-end">
+        <Button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg">Save Changes</Button>
+    </div>
 </form>
-<SuperDebug data={$form} />
+
+
+
+<!-- <SuperDebug data={$form} /> -->
 <style>
     h1{
         text-align: center;

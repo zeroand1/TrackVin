@@ -1,0 +1,83 @@
+<form method="POST" use:enhance class="max-w-4xl mx-auto p-6 rounded-lg shadow-md">
+    <!-- Profile Header -->
+    <div class="border-b pb-4 mb-6 text-center">
+        <h1 class="text-2xl font-semibold">{ $form.name || "Component Name" }</h1>
+        <p class="text-lg text-gray-500">{ $form.code || "Component Code" }</p>
+    </div>
+
+    <!-- Form Grid -->
+    <div class="grid grid-cols-2 gap-6">
+        <!-- Left Column -->
+        <div>
+            <Label for="qty">Qty required in assembly:</Label>   
+            <Input type="number" name="qty" placeholder="Qty required" bind:value={$form.qty} {...$constraints.qty} class="w-full"/>
+            {#if $errors.qty}<span class="invalid">{$errors.qty[0]}</span>{/if}
+
+            <Label for="material">Component Material:</Label>
+            <Select name="material" bind:value={$form.material} {...$constraints.material} class="w-full">
+                {#each data.material as material}
+                    <option value={material._id}>{material.name} - ₹{material.cost}</option>
+                {/each}
+            </Select>
+            {#if $errors.material}<span class="invalid">{$errors.material}</span>{/if}
+
+            <Label for="description">Component Description:</Label>
+            <Textarea name="description" placeholder="Component Description" bind:value={$form.description} {...$constraints.description} class="w-full"></Textarea>
+            {#if $errors.description}<span class="invalid">{$errors.description}</span>{/if}
+        </div>
+
+        <!-- Right Column -->
+        <div>
+            <Label>Procurement Type:</Label>
+            <div class="flex gap-4">
+                    <Radio type="radio" name="procurement" bind:group={$form.procurement} value="manufactured"> Manufactured</Radio>
+                    <Radio type="radio" name="procurement" bind:group={$form.procurement} value="bought"> Bought </Radio>
+            </div>
+            {#if $errors.procurement}<span class="invalid">{$errors.procurement}</span>{/if}
+
+            {#if $form.procurement === 'bought'}
+                <Label for="cost">Cost:</Label>   
+                <Input type="number" name="cost" placeholder="Cost" bind:value={$form.cost} {...$constraints.cost} class="w-full"/>
+                {#if $errors.cost}<span class="invalid">{$errors.cost}</span>{/if}
+            {/if}
+        </div>
+    </div>
+
+    <!-- Processes Section (For Manufactured) -->
+    {#if $form.procurement === 'manufactured'}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold">Processes:</h2>
+            {#if $errors.processes?._errors}<span class="invalid">{$errors.processes._errors[0]}</span>{/if}
+
+            <div class="grid grid-cols-3 gap-4">
+                {#each ['treatment', 'casting', 'machining', 'finishing', 'testing'] as procType}
+                    <div class="border p-4 rounded-md">
+                        <h3 class="font-semibold mb-2">{procType.charAt(0).toUpperCase() + procType.slice(1)}</h3>
+                        {#each data.process as processObj}
+                            {#if processObj.type === procType}
+                                <Label class="flex items-center">
+                                    <Checkbox on:change={() => toggleProcess(processObj._id)} checked={processObj._id in selectedProcesses}/> {processObj.name}
+                                </Label>
+
+                                {#if processObj._id in selectedProcesses}
+                                    <div class="mt-2 space-y-2">
+                                        <Label>Cost:</Label>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].cost} class="w-full"/>
+
+                                        <Label>Batch Size:</Label>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].batchSize} class="w-full"/>
+                                    </div>
+                                {/if}
+                            {/if}
+                        {/each}
+                    </div>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    <!-- Submit Button -->
+    <div class="mt-6 text-right">
+        <Button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Add Component</Button>
+    </div>
+</form>

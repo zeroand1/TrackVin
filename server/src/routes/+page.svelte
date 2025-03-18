@@ -1,8 +1,5 @@
-<h1>Welcome to SvelteKit 1</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script>
+  import { DarkMode } from 'flowbite-svelte';
+</script>
 
-<style>
-h1{
-    text-align: center;
-}
-</style>
+<DarkMode />
