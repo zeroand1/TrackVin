@@ -1,22 +1,55 @@
 <script lang='ts'>
-	import { superForm } from 'sveltekit-superforms';
+	import { filesProxy, superForm } from 'sveltekit-superforms';
     import type { PageData } from './$types.js';
     import type { ObjectId } from 'mongodb';
     export let data: PageData;
     import SuperDebug from 'sveltekit-superforms';
     import { resolveRoute } from '$app/paths';
     import { Input, Label, Helper , P, Button , Heading , Radio, Select, Textarea, Checkbox, Fileupload} from 'flowbite-svelte';
-    import { PenSolid } from 'flowbite-svelte-icons';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell,TableSearch } from 'flowbite-svelte';   
-	const {form , errors, constraints, message, enhance} = superForm(data.form, {dataType: 'json' ,onUpdate: ({ result }) => {
-            if (result.type === "success") {
-                console.log("Form submitted successfully!");
-                selectedProcesses = {};
-            }
+    import { PenSolid } from 'flowbite-svelte-icons'; 
+    import {page} from '$app/stores';
+    let editMode = true;
+    let failedCompFetch = false;
+    const queryParams = $page.url.searchParams
+    const componentID = queryParams.get('id');
+    const {form , errors, constraints, message, enhance} = superForm(data.form, {dataType: 'json' ,onUpdate: ({ result }) => {
+        if (result.type === "success") {
+            console.log("Form submitted successfully!");
+            selectedProcesses = {};
+            $form.image = null;
+            imagePreview = null
+        }
         }
     });
+    const file = filesProxy(form, 'image');
     let selectedProcesses: Record<string, { cost: number; batchSize: number }> = {};
-    $form.material = "";
+    if(componentID){
+        if (!data.compData) failedCompFetch = true;
+        else {
+            const compData = data.compData;
+            $form.name = compData.name;
+            $form.qty = compData.qty;
+            $form.code = compData.code;
+            $form.procurement = compData.procurement;
+            $form.material = compData.material;
+            $form.materialSupplied = compData.materialSupplied;
+            $form.image = compData.image;
+            $form.cost = compData.cost;
+            $form.yield = compData.yield;
+            $form.materialPerYield = compData.materialPerYield;
+            $form.processes = compData.processes;
+            $form.description = compData.description;
+            selectedProcesses = compData.processes;
+            $form._id = compData._id;
+        }
+        editMode = false;
+        console.log(componentID);
+    }
+    else{
+        $form.material = "";
+    }
+    
+   
         // Toggle selection and initialize cost & batchSize
     function toggleProcess(processId: string) {
         if (selectedProcesses[processId]) {
@@ -43,20 +76,26 @@
         // $form.processes = selectedProcesses;
     }
 
-    let fileInput: HTMLInputElement | null = null;;
+    let imagePreview: string | null = null;
 
-
-    function handleFileUpload(event:Event){
+    
+    function handleFileUpload(event: Event) {
         const target = event.target as HTMLInputElement;
-        if (target.files && target.files[0]) {
-            const file = target.files[0];
-            const reader = new FileReader();
-            reader.onload = () => {
-                document.querySelector("img")!.src = reader.result as string;
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!target.files || target.files.length === 0) return;
+
+        const file = target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            imagePreview = reader.result as string;
+        };
+        reader.readAsDataURL(file);
+        // $form.image=file;
+        console.log($form.image)
+        console.log(file)
     }
+
+    let fileInput: HTMLInputElement | null = null; // Explicitly typed
     
 </script>
 
@@ -65,20 +104,28 @@
 <br>
 
 {#if $message}<h3>{$message}</h3>{/if}
-<form method="POST" use:enhance class="max-w-4xl mx-auto p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
+<form method="POST" enctype="multipart/form-data"  use:enhance class="max-w-4xl mx-auto p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
     <!-- Profile Header -->
     <div class="flex items-center space-x-6">
         <!-- Profile Picture -->
         <div class="relative w-32 h-32 group">
-            <button type="button" class="text-white text-xl" on:click={() => {fileInput? fileInput.click(): null}}>
+            <button type="button" class="text-white text-xl" on:click={() => fileInput?.click()}>
             <!-- Hidden File Input -->
-            <input type="file" accept="image/*" class="hidden" bind:this={fileInput} on:change={handleFileUpload} />
-        
+            
+            <input type="file" name="image" accept="image/png, image/jpeg"  class="hidden" on:change={handleFileUpload} bind:this={fileInput} bind:files={$file}  />
+
+            {#if imagePreview}
+                <img src={imagePreview} alt="Preview" class="w-32 h-32 rounded-lg border object-cover" />
+            {:else if $form.image && typeof($form.image) == 'string'} 
+                <img src = {$form.image} alt="Profile" class="w-32 h-32 rounded-lg border object-cover" />
+            {:else}
+                <img src="/add_image.svg" alt="Profile" class="w-full h-full rounded-lg border-4 border-white dark:border-gray-800 shadow-lg object-cover">
+            {/if}  
+            
             <!-- Profile Image -->
-            <img src="/add_image.svg" alt="Profile" class="w-full h-full rounded-lg border-4 border-white dark:border-gray-800 shadow-lg object-cover">
         
             <!-- Hover Effect: Pencil Icon -->
-            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-40 transition-opacity duration-300">
                     <PenSolid/>
                 </div>
             </button>
@@ -97,18 +144,23 @@
         <!-- Basic Info -->
         <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
             <h2 class="text-lg font-semibold dark:text-white">Basic Info</h2>
-            
+            {console.log($errors)}
             <Label for="qty" class="dark:text-gray-300">Qty in Assembly:</Label>   
             <Input type="number" name="qty" placeholder="Qty required" bind:value={$form.qty} {...$constraints.qty} class="w-full"/>
             {#if $errors.qty}<span class="invalid">{$errors.qty[0]}</span>{/if}
             {#if $form.procurement === 'manufactured'}
-                <Label for="material" class="dark:text-gray-300">Material:</Label>
+                <div class="flex items-center gap-2 dark:text-gray-300">
+                    <Label for="material">Material:</Label> 
+                    <Checkbox bind:checked={$form.materialSupplied} class='ml-auto'> Supplied with process </Checkbox>
+                </div>
                 <Select name="material" bind:value={$form.material} {...$constraints.material} class="w-full dark:bg-gray-700 dark:text-white">
                     {#each data.material as material}
-                        <option value={material._id}>{material.name} - ₹{material.cost}</option>
+                        <option value={material._id}>{material.name} {#if !$form.materialSupplied}- ₹{material.cost}{/if}</option>
                     {/each}
                 </Select>
                 {#if $errors.material}<span class="invalid">{$errors.material}</span>{/if}
+                <br>
+                
             {/if}
             {#if $form.procurement === 'bought'}
             <Label for="cost" class="dark:text-gray-300">Cost:</Label>   
@@ -137,6 +189,7 @@
                     <Input type="number" name="materialYield" placeholder="Material Yield" 
                         aria-invalid={$errors.yield ? 'true' : undefined} 
                         bind:value={$form.yield} {...$constraints.yield} 
+                        disabled={$form.materialSupplied}
                         class="w-full"/>
                 </div>
             
@@ -146,11 +199,12 @@
                 <!-- Second Input Block (matching structure of first) -->
                 <div class="w-1/3">
                     <Label class="dark:text-gray-300 invisible block">
-                        Placeholder
+                        Material used per yield
                     </Label>
                     <Input type="number" name="materialPerYield" placeholder="Material used per yield" 
                         aria-invalid={$errors.materialPerYield ? 'true' : undefined} 
                         bind:value={$form.materialPerYield} {...$constraints.materialPerYield} 
+                        disabled={$form.materialSupplied}
                         class="w-full"/>
                 </div>
             
@@ -158,7 +212,7 @@
                 <div class="pb-2"><P>Kg</P></div>
             </div>
             {/if}
-            
+
             
             
         
@@ -185,12 +239,12 @@
                                 <div class="mt-2 flex gap-4 items-end">
                                     <div class="w-1/2">
                                         <Label class="dark:text-gray-300 block">{processObj.name} Cost:</Label>
-                                        <Input type="number" bind:value={$form.processes[processObj._id].cost} class="w-full dark:bg-gray-700 dark:text-white"/>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].cost} min=0 required class="w-full dark:bg-gray-700 dark:text-white"/>
                                     </div>
-                                
+                                    
                                     <div class="w-1/2">
                                         <Label class="dark:text-gray-300 block">{processObj.name} Batch Size:</Label>
-                                        <Input type="number" bind:value={$form.processes[processObj._id].batchSize} class="w-full dark:bg-gray-700 dark:text-white"/>
+                                        <Input type="number" bind:value={$form.processes[processObj._id].batchSize} min=1  required class="w-full dark:bg-gray-700 dark:text-white"/>
                                     </div>
                                 </div>
                                 {/if}
@@ -201,6 +255,10 @@
             </div>
         </div>
     {/if}
+
+    <div class="mt-6 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+        <Label>Description/Notes:<Textarea rows={10} bind:value={$form.description}/></Label>
+    </div>
 
     <!-- Submit Button -->
     <div class="sticky bottom-0 bg-gray-100 dark:bg-gray-800 p-4 flex justify-end">

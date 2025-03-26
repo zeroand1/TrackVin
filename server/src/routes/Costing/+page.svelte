@@ -6,7 +6,7 @@
 <Heading>Costing</Heading>
 
 <br>
-<a href='Costing/CreateComponent'><Button color="purple">Add new component</Button></a>
+<a href='Costing/Component/'><Button color="purple">Add new component</Button></a>
 <a href='Costing/CreateMaterial'><Button color="purple">Add new material</Button></a>
 <a href='Costing/CreateProcess'><Button color="purple">Add new Process</Button></a>
 
