@@ -2,7 +2,7 @@ import { componentDB} from "$db/component";
 import { materialDB } from "$db/material";
 import { processDB } from "$db/process";
 import type { PageServerLoad, Actions } from "./$types";
-import { ObjectId, type WithId } from "mongodb";
+import { Binary, ObjectId, type WithId } from "mongodb";
 
 
 
@@ -13,6 +13,7 @@ interface Component {
     name: string;
     code: string;
     qty: number;
+    image: any | null; // Can be a URL or null
     material?: string | null; // Can be an ObjectId string or null
     yield?: number;
     materialPerYield?: number;
@@ -37,7 +38,7 @@ export const load: PageServerLoad = async () => {
     const payload: Component[] = data.map(doc => ({
         ...doc,
         _id: doc._id.toString(), // Ensure _id is a string
-        image: null,
+        image : doc.image ?  `data:image/jpg;base64,${doc.image.buffer.toString('base64')}` : null,
         material: doc.material ? doc.material.toString() : null, // Ensure material is a string
     }));
 

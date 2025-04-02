@@ -2,8 +2,10 @@
 	import '../app.css';
 	let { children } = $props();
 	import { page } from '$app/state';
-	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper, SidebarDropdownItem, SidebarDropdownWrapper } from 'flowbite-svelte';
-  	import { ChartPieSolid, GridSolid, CartSolid, MailBoxSolid, UserSolid, ArrowRightToBracketOutline, EditOutline, CashRegisterSolid, LayersOutline, HammerOutline	,CogOutline } from 'flowbite-svelte-icons';
+	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper, SidebarDropdownItem, SidebarDropdownWrapper,Toast } from 'flowbite-svelte';
+  	import { ChartPieSolid, GridSolid, CartSolid, MailBoxSolid, UserSolid, ArrowRightToBracketOutline, EditOutline, CashRegisterSolid, LayersOutline, HammerOutline	,CogOutline, CheckCircleSolid } from 'flowbite-svelte-icons';
+	import Toaster from '$lib/components/Toaster.svelte';
+	// export const ssr = false;
 	let activeUrl = page.url.pathname;
   	let activeClass = 'flex items-center p-2 text-base font-normal text-primary-900 bg-primary-200 dark:bg-primary-700 rounded-lg dark:text-white hover:bg-primary-100 dark:hover:bg-gray-700';
   	// let nonActiveClass = 'flex items-center p-2 text-base font-normal text-primary-900 bg-primary-200 dark:bg-primary-700 rounded-lg dark:text-white hover:bg-primary-100 dark:hover:bg-gray-700';
@@ -13,6 +15,7 @@
 <div class="flex min-h-screen">
     <!-- Sidebar (Fixed on the Left) -->
     <div class="w-64 fixed top-0 left-0 h-full">
+		<Toaster/>
         <Sidebar>
 			<SidebarWrapper>
 				<SidebarGroup>

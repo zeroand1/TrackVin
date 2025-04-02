@@ -82,39 +82,38 @@ export const actions  = {
     default: async ({ request }) => {
         let totalCost: number = 0;
         const form = await superValidate(request, zod(schema));
-        console.log(form.data);
+        if(form.data.image){
+            if (form.data._id && typeof(form.data.image) == 'string'){ // Use Case: Edit but image unchanged
+                const file = form.data.image;
+                console.log(file)
+                console.log(file.split(','));
+                const base64String = file.split(',')[1]; // Remove 'data:image/jpg;base64,' prefix
+                const imageBuffer = Buffer.from(base64String, 'base64'); 
+                console.log(imageBuffer);
+                form.data.image = imageBuffer; 
+            }
+            else if(form.data.image.length <= 1){ // Use Case: Edit but image changed or New Entry 
+                                                // (Condition Explaination: image is in object form in first element 
+                                                // of single element array from file proxy) 
+                                                // and not in storable array form
+                const file = form.data.image[0]; 
+                const buffer = Buffer.from(await file.arrayBuffer());
+                form.data.image = buffer;
+                
+            }
+            // Do nothing if to file.image if form not valid and image not changed
+            
+        }  
         if (!form.valid) {
             // Again, return { form } and things will just work.d
+        
             return fail(400, { form });
         }
         else{
-            console.log("form.data")
-            console.log(form.data);
-            if(form.data.image){
-                
-                /////FILE WRITING
-                // const extension = path.extname(file[0].name);
-                // const randomName = `${uuidv4()}${extension}`;
-                // await writeFile(`./static/${randomName}`, new Uint8Array(await file[0].arrayBuffer()));
-                // form.data.image = `./static/${randomName}`;
-                if (form.data._id && typeof(form.data.image) == 'string'){
-                    const file = form.data.image;
-                    console.log(file)
-                    console.log(file.split(','));
-                    const base64String = file.split(',')[1]; // Remove 'data:image/jpg;base64,' prefix
-                    const imageBuffer = Buffer.from(base64String, 'base64'); 
-                    console.log(imageBuffer);
-                    form.data.image = imageBuffer;  
-                }
-                else{
-                    const file = form.data.image[0];
-                    const buffer = Buffer.from(await file.arrayBuffer());
-                    form.data.image = buffer;
-                }
-                
-            }   
+            console.log(form.data); 
             let payload:any = structuredClone(form.data);
             ////////////////Total calculation
+            console.log("are u here yet?")
             if (payload.procurement === "manufactured") {
                 let matObj =  await materialDB.find<material>({_id:new ObjectId(payload.material)}, { limit: 50}).toArray();
                 if(payload.materialSupplied===false){
@@ -140,11 +139,12 @@ export const actions  = {
                 await componentDB.updateOne({_id: new ObjectId(form.data._id)}, {$set: final});
             }
             else{
-                await componentDB.insertOne(final);	
+                let reply = await componentDB.insertOne(final);	
+                let returnID = reply.insertedId.toString();
+                form.data._id = returnID
             }   
         }
         // TODO: Do something with the validated form.data
-        console.log("This?")
         return message(form, 'Form posted successfully!');
     }
 } satisfies Actions

@@ -25,6 +25,7 @@ export const schema = z.object({
     processes: z.record(objectIdSchema, processSchema), 
     cost: z.number().gte(1, "Cost should be greater than 0").optional().nullable().default(null).transform(value => value ?? 0),
 }).superRefine((data, ctx) => {
+    console.log(data.procurement)
     if (data.procurement === "manufactured") {
         console.log("Reached here")
         if (!data.material?.match(/^[a-f0-9]{24}$/)) {
@@ -36,6 +37,7 @@ export const schema = z.object({
         }
         Object.keys(data.processes).forEach((key) => {
             console.log(data.processes[key])
+            console.log(data.processes[key].cost)
             if (data.processes[key].cost === undefined || data.processes[key].cost < 0) {
                 console.log("Reached")
                 ctx.addIssue({
