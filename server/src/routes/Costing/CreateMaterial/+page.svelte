@@ -2,22 +2,28 @@
 	import { superForm } from 'sveltekit-superforms';
 	import type { PageData } from './$types.js';
   export let data: PageData;
-	const {form , errors, constraints, message, enhance } = superForm(data.form , {
+	const {form , errors, constraints, message, enhance } = superForm(data.insertForm , {
   invalidateAll: true,
 });
+  const {form: updateForm , errors: updateErrors, constraints: updateConstraints, message: updateMessage, enhance: updateEnhance, formId } = superForm(data.updateForm ,
+   {dataType: 'json', onResult: async ({ result }) => {
+    console.log(result)
+    if (result.type === "success") {
+      editIndex = -1
+    }
+   }
+   });
+
 import { Input, Label, Helper , P, Button , Heading} from 'flowbite-svelte';
 import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch } from 'flowbite-svelte';
 
 let editIndex = -1 
-function editClick (index,material) { 
+function editClick (index,material) {
   editIndex = index
-  $form.code = material.code
-  $form.name = material.name
-  $form.cost = material.cost
-  
-}
-function update (material){
-  
+  $updateForm.code = material.code
+  $updateForm.name = material.name
+  $updateForm.cost = material.cost
+  $formId = material._id.toString()
 }
 </script>
 
@@ -27,7 +33,7 @@ function update (material){
 <br>
 <br>
 
-<form method="POST" use:enhance>
+<form method="POST" action="?/insert" use:enhance>
     <Label for = "code">Material code: </Label>
     <Input type="text" name="code" placeholder="Code" aria-invalid={$errors.code ? 'true' : undefined} bind:value={$form.code} {...$constraints.code} />
     {#if $errors.code}<span class="invalid">{$errors.code}</span>{/if}
@@ -47,7 +53,7 @@ function update (material){
 </form>
 
 <br>
-<form method="POST" use:enhance>
+<form method="POST" action="?/update" use:updateEnhance>
 <Table>
   <TableHead>
     <TableHeadCell>Material Code</TableHeadCell>
@@ -60,21 +66,21 @@ function update (material){
     <TableBodyRow>
       <TableBodyCell>
         {#if editIndex == index} 
-        <Input type="text" name="code" placeholder="Code" aria-invalid={$errors.code ? 'true' : undefined} bind:value={$form.code} {...$constraints.code} />
+        <Input type="text" name="code" placeholder="Code" aria-invalid={$updateErrors.code ? 'true' : undefined} bind:value={$updateForm.code} {...$updateConstraints.code} />
           {:else}
           {material.code}
         {/if}
       </TableBodyCell>
       <TableBodyCell>
         {#if editIndex == index} 
-        <Input type="text" name="name" placeholder="Name" aria-invalid={$errors.name ? 'true' : undefined} bind:value={$form.name}  {...$constraints.name}/>
+        <Input type="text" name="name" placeholder="Name" aria-invalid={$updateErrors.name ? 'true' : undefined} bind:value={$updateForm.name}  {...$updateConstraints.name}/>
           {:else}
           {material.name}
         {/if}
       </TableBodyCell>
       <TableBodyCell>
         {#if editIndex == index} 
-        <Input type="number" name="cost" placeholder="Raw Cost per kg" aria-invalid={$errors.cost ? 'true' : undefined} bind:value={$form.cost} {...$constraints.cost}/>
+        <Input type="number" name="cost" placeholder="Raw Cost per kg" aria-invalid={$updateErrors.cost ? 'true' : undefined} bind:value={$updateForm.cost} {...$updateConstraints.cost}/>
           {:else}
           ₹{material.cost}
         {/if}
@@ -93,6 +99,7 @@ function update (material){
 </Table>
 </form>
 {#if $message}<h3>{$message}</h3>{/if}
+{#if $updateMessage}<h3>{$updateMessage}</h3>{/if}
 
 <style>
     h1{
